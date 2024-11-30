@@ -126,11 +126,10 @@ def do_intersect(p1, q1, p2, q2):
     o3 = orientation(p2, q2, p1)
     o4 = orientation(p2, q2, q1)
 
-    # General case
+    # general case
     if o1 != o2 and o3 != o4:
         return True
 
-    # Special Cases
     # p1, q1, and p2 are collinear, and p2 lies on segment p1q1
     if o1 == 0 and on_segment(p1, p2, q1):
         return True
@@ -161,21 +160,19 @@ def count_edge_overlaps(graph):
     """
     Count the number of overlapping edges in the graph.
     """
-    pos = nx.get_node_attributes(graph, "pos")  # Node positions
+    pos = nx.get_node_attributes(graph, "pos") 
     edges = list(graph.edges)
     overlap_count = 0
 
-    # Iterate over all pairs of edges
+    # check over all pairs of edges
     for i in range(len(edges)):
         for j in range(i + 1, len(edges)):
             u1, v1 = edges[i]
             u2, v2 = edges[j]
 
-            # Get positions of the edge endpoints
             p1, q1 = pos[u1], pos[v1]
             p2, q2 = pos[u2], pos[v2]
 
-            # Check if these edges intersect
             if do_intersect(p1, q1, p2, q2):
                 overlap_count += 1
 
@@ -222,7 +219,7 @@ def batch(graph, stations, generation_quantity, iterations):
             if passenger.arrived():
                 arrived_passengers.append(passenger)
                 passengers.remove(passenger)
-        # Update weights conditionally
+        # update weights conditionally
         if regens % 5 == 0:
             update_edge_weights(graph, trip_counter)
         if regens < iterations:

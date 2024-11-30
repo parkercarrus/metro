@@ -31,8 +31,8 @@ def generate_stations(zones_count, random_state, map_size=800, cluster_spread=50
     stations = []
     for station_type, num_clusters in zones_count.items():
         for _ in range(num_clusters):
-            center = rng.random(2) * map_size  # Generate a random cluster center
-            location = center + rng.normal(0, cluster_spread, 2)  # Add spread
+            center = rng.random(2) * map_size  # generate random cluster center
+            location = center + rng.normal(0, cluster_spread, 2)  # cluster spread
             station = Station(len(stations), location, station_type)
             stations.append(station)
     return stations
@@ -44,7 +44,7 @@ def initialize_graph(stations):
         graph.add_node(station.station_id, pos=station.position, type=station.type)
     for i in range(len(stations)):
         for j in range(i + 1, len(stations)):
-            # Add an edge with a random weight
+            # add edge
             graph.add_edge(stations[i].station_id, stations[j].station_id, weight=random.uniform(0, 1))
             break
     return graph
@@ -56,7 +56,7 @@ def evaluate_graph(graph, weights):
 class GeneticAlgorithm:
     def __init__(self, graph, max_edges):
         self.graph = graph
-        self.max_edges = max_edges  # Maximum edge budget
+        self.max_edges = max_edges
         self.offspring = []
         self.fitness = None
 
@@ -69,16 +69,16 @@ class GeneticAlgorithm:
     def generate_offspring(self, parent1, parent2, mutation_rate):
         nodes = parent1.nodes
         offspring = nx.Graph()
-        # Add nodes and preserve their positions
+        # add nodes and preserve their positions
         for node in nodes:
-            offspring.add_node(node, **parent1.nodes[node])  # Copy all attributes, including 'pos'
+            offspring.add_node(node, **parent1.nodes[node]) 
 
-        # Combine edges from both parents, limited to the edge budget
+        # combine edges from both parents, limited to the edge budget
         total_edges = min(len(parent1.edges) + len(parent2.edges), self.max_edges)
         edges = random.sample(list(parent1.edges) + list(parent2.edges), total_edges)
         offspring.add_edges_from((u, v, {"weight": 0}) for u, v in edges)
 
-        # Ensure offspring is connected
+        # ensure offspring is connected
         if not nx.is_connected(offspring):
             components = list(nx.connected_components(offspring))
             for i in range(len(components) - 1):
@@ -86,7 +86,7 @@ class GeneticAlgorithm:
                 node2 = random.choice(list(components[i + 1]))
                 offspring.add_edge(node1, node2, weight=0)
 
-        # Apply mutation
+        # apply mutation
         self.mutate_offspring(offspring, mutation_rate)
         return offspring
 
@@ -97,12 +97,12 @@ class GeneticAlgorithm:
         """
         if random.random() < mutation_rate:
             if offspring.number_of_edges() < self.max_edges:
-                # Add a new edge if under limit
-                u, v = random.sample(list(offspring.nodes()), 2)  # Convert to list
+                # add a new edge if under limit
+                u, v = random.sample(list(offspring.nodes()), 2) 
                 if not offspring.has_edge(u, v):
                     offspring.add_edge(u, v, weight=0)
             elif offspring.number_of_edges() > self.max_edges:
-                # Remove a random edge if over limit
+                # remove a random edge if over limit
                 u, v = random.choice(list(offspring.edges))
                 offspring.remove_edge(u, v)
 
