@@ -59,9 +59,8 @@ def main():
             mpatches.Patch(color='green', label='Not Congested'),
             mpatches.Patch(color='red', label='Congested'),
         ]
-        plt.legend(handles=legend_elements, loc='lower left', title="Legend")
+        plt.legend(handles=legend_elements, loc='upper left', title="Legend")
 
-    
         # Save the plot to a BytesIO buffer for use in Streamlit
         buf = BytesIO()
         plt.savefig(buf, format="png", facecolor='#d1d1d1')
