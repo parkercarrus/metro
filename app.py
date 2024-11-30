@@ -23,9 +23,9 @@ def plot_graph(graph, stations):
         else:
             node_colors.append('gray')  # Fallback for unknown types
     
-    plt.figure(figsize=(10, 6))  # Reduced figure size for better fit
+    plt.figure(figsize=(10, 6)) 
     pos = nx.get_node_attributes(graph, "pos")  # Get positions from node attributes
-    
+
     # Validate that all nodes have positions
     if len(pos) != len(graph.nodes):
         raise ValueError("Not all nodes have positions assigned.")
@@ -49,7 +49,7 @@ def plot_graph(graph, stations):
     
     # Save the plot to a BytesIO buffer for use in Streamlit
     buf = BytesIO()
-    plt.savefig(buf, format="png")
+    plt.savefig(buf, format="png", facecolor='#d1d1d1')
     plt.close()
     buf.seek(0)
     return buf
@@ -83,7 +83,7 @@ col1, col2 = st.columns([3, 2])  # 3:2 ratio for left (graph) and right (control
 
 # Title Section
 with col1:
-    st.title("Metro Optimization")
+    st.title("Metro Map")
 
 if st.session_state["generation"] == 0:
     with col2:
@@ -219,6 +219,7 @@ else:
 # Display the graph on the left side
 with col1:
     st.text("Red: Residential -- Blue: Commercial -- Green: Industrial")
+    st.text("Line Congestion: Green (low) --> Red (high)")
     if st.session_state["graph"]:
         buf = plot_graph(st.session_state["graph"], station_holder.get_stations())
         st.image(buf, caption=f"Graph for Generation {st.session_state['generation']}", use_container_width=True)
