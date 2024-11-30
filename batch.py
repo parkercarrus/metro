@@ -181,7 +181,7 @@ def count_edge_overlaps(graph):
 
     return overlap_count
 
-def weighted_cost(arrived_passengers, trip_counter, graph, stations):
+def weighted_cost(arrived_passengers, trip_counter, graph, stations, weights):
     avg_travel_time = np.average([p.ticks for p in arrived_passengers])
     congestion_penalty = np.mean([graph.edges[a, b]['weight'] for a, b in trip_counter.trips.keys()])
     edge_use_variance = np.var([graph.edges[a, b]['weight'] for a, b in trip_counter.trips.keys()])
@@ -193,14 +193,14 @@ def weighted_cost(arrived_passengers, trip_counter, graph, stations):
     mean_distance_cost = np.mean([((10 + p.cost)/10 * p.distance_traveled) for p in arrived_passengers])    
     # combine factors and weights
     total_cost = (
-        0*(100/4.855) * avg_travel_time +            
-        0*(100/29.86) * congestion_penalty +         
-        0*(100/489) * edge_use_variance +
-        0*(100/44) * edge_count + 
-        2*(100/212) * mean_edge_distance + 
-        0*(100/2000) * mean_traveled_distance + 
-        0.1*(100/800) * mean_distance_cost +
-        1* overlapping_edges
+        weights['AvgStops'] *(100/4.855) * avg_travel_time +            
+        weights['AvgCongestion']*(100/29.86) * congestion_penalty +         
+        weights['LineUseVariance']*(100/489) * edge_use_variance +
+        weights['LineCount']*(100/44) * edge_count + 
+        weights['AvgLineDistance']*(100/212) * mean_edge_distance + 
+        weights['AvgTripDistance']*(100/2000) * mean_traveled_distance + 
+        weights['MeanDistCost']*(100/800) * mean_distance_cost +
+        weights['OverlappingLines']* overlapping_edges
 
     )    
     return total_cost
@@ -209,7 +209,7 @@ def update_edge_weights(graph, trip_counter):
     for trip in trip_counter.trips.keys():
         graph.edges[trip[0], trip[1]]['weight'] = trip_counter.trips[trip]
 
-def batch(graph, stations, generation_quantity, iterations, ):
+def batch(graph, stations, generation_quantity, iterations):
     regens = 0
     arrived_passengers = []
     passengers = deque(generate_passengers(stations, p_passengers, generation_quantity))
@@ -231,8 +231,28 @@ def batch(graph, stations, generation_quantity, iterations, ):
         regens += 1
     return arrived_passengers, trip_counter, graph
 
-
-def evaluate_state(graph, stations, evaluation_function=weighted_cost):
+def evaluate_state(graph, stations, weights, evaluation_function=weighted_cost):
     arrivals, trip_counter, graph = batch(graph, stations, generation_quantity=20, iterations=40)
-    cost = evaluation_function(arrivals, trip_counter, graph, stations)
+    cost = evaluation_function(arrivals, trip_counter, graph, stations, weights)
     return cost
+
+def secondary_evaluation(graph, stations):
+    arrived_passengers, trip_counter, graph = batch(graph, stations, generation_quantity=20, iterations=40)
+
+    avg_travel_time = np.average([p.ticks for p in arrived_passengers])
+    congestion_penalty = np.mean([graph.edges[a, b]['weight'] for a, b in trip_counter.trips.keys()])
+    edge_use_variance = np.var([graph.edges[a, b]['weight'] for a, b in trip_counter.trips.keys()])
+    edge_count = len(graph.edges)
+    overlapping_edges = count_edge_overlaps(graph)
+    mean_edge_distance = np.mean([calculate_edge_distance(a, b, stations) for a, b in graph.edges])
+    mean_traveled_distance = np.mean([p.distance_traveled for p in arrived_passengers])
+
+    return {
+        "AvgTravelStops": avg_travel_time,
+        "AvgCongestion": congestion_penalty,
+        "LineUseVariance": edge_use_variance,
+        "LineCount": edge_count,
+        "NumOverlappingLines": overlapping_edges,
+        "AvgLineDist": mean_edge_distance,
+        "AvgTripDist": mean_traveled_distance
+    }

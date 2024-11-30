@@ -5,6 +5,9 @@ from io import BytesIO
 from simulation import generate_stations, initialize_graph, GeneticAlgorithm, station_holder, evaluate_graph
 import random
 import time
+import batch
+import pandas as pd
+import matplotlib.colors as mcolors
 
 # Helper function to plot the graph and return the image buffer
 def plot_graph(graph, stations):
@@ -26,10 +29,22 @@ def plot_graph(graph, stations):
     # Validate that all nodes have positions
     if len(pos) != len(graph.nodes):
         raise ValueError("Not all nodes have positions assigned.")
-
+    
+    edge_weights = nx.get_edge_attributes(graph, 'weight') 
+    if edge_weights:
+        weights = list(edge_weights.values())
+        min_weight, max_weight = min(weights), max(weights)
+        norm = plt.Normalize(vmin=min_weight, vmax=max_weight)
+        edge_colors = [
+            mcolors.to_hex(plt.cm.RdYlGn(1 - norm(weight)))  # Red-Yellow-Green colormap, inverted
+            for weight in weights
+        ]
+    else:
+        edge_colors = "gray"  # gray if no weights
+    #nx.draw_networkx_edge_labels(graph, pos=positions, edge_labels=edge_weights)
     # Draw the graph with the appropriate node colors
     nx.draw(
-        graph, pos, with_labels=False, node_size=50, alpha=0.7, node_color=node_colors
+        graph, pos, with_labels=False, node_size=50, alpha=0.7, node_color=node_colors, edge_color=edge_colors
     )
     
     # Save the plot to a BytesIO buffer for use in Streamlit
@@ -39,6 +54,19 @@ def plot_graph(graph, stations):
     buf.seek(0)
     return buf
 
+if "results_df" not in st.session_state:
+    st.session_state["results_df"] = pd.DataFrame(columns=[
+        "Gen",
+        "Score",
+        "Time",
+        "AvgStops",
+        "AvgCongestion",
+        "LineUseVariance",
+        "LineCount",
+        "OverlappingLines",
+        "AvgLineDistance",
+        "AvgTripDistance"
+    ])
 
 # Initialize session state
 if "generation" not in st.session_state:
@@ -97,9 +125,21 @@ else:
         st.header(f"Generation {st.session_state['generation']}")
 
         # Display hyperparameters
-        st.subheader("Adjust Hyperparameters")
-        population_size = st.slider("Population Size", 5, 50, 10, key="pop_size_slider")
+        population_size = st.slider("Children Count", 5, 100, 10, key="pop_size_slider")
         mutation_rate = st.slider("Mutation Rate", 0.0, 1.0, 0.1, step=0.05, key="mutation_slider")
+        st.caption("Evaluation Parameter Weights")
+        weights_dict = {}
+        with st.expander("Adjust Weights", expanded=False):
+            weights_dict = {}
+            weights_dict['MeanDistCost'] = st.slider("SmartCost Weight", 0.0, 1.0, 1.0, step=0.1)
+            weights_dict['AvgStops'] = st.slider("AvgStops", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['AvgCongestion'] = st.slider("AvgCongestion", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['LineUseVariance'] = st.slider("LineUseVariance Weight", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['LineCount'] = st.slider("LineCount Weight", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['AvgLineDistance'] = st.slider("AvgLineDistance Weight", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['AvgTripDistance'] = st.slider("AvgTripDistance Weight", 0.0, 1.0, 0.1, step=0.1)
+            weights_dict['OverlappingLines'] = st.slider("OverlappingLines Weight", 0.0, 1.0, 0.1, step=0.1)
+
 
         # Button to evolve
         if st.button("Evolve"):
@@ -109,7 +149,7 @@ else:
                 ga = st.session_state["ga"]
 
                 # Evaluate current population
-                ga.evaluate_population(fitness_function=lambda g: evaluate_graph(g))
+                ga.evaluate_population(fitness_function=lambda g: evaluate_graph(g, weights_dict))
                 best_graph, best_cost = ga.select_best()
 
                 # Update statistics
@@ -121,22 +161,51 @@ else:
                 st.session_state["generation"] += 1
 
                 # Evolve to the next generation
-                ga.evolve()
+                ga.evolve(mutation_rate, population_size, weights_dict)
             st.success(f"Generation {st.session_state['generation'] - 1} Complete!")
 
-        # Display statistics
-        st.subheader("Stats")
-        if st.session_state["stats"]["best_cost"]:
-            st.metric(label="Best Cost", value=f"{st.session_state['stats']['best_cost'][-1]:.2f}")
-        else:
-            st.write("No statistics available yet. Click 'Evolve' to start.")
+        with col2:
+            try:
+                st.subheader("Evaluation Results")
+                # Run secondary evaluation and collect results
+                secondary_evaluation_results = batch.secondary_evaluation(best_graph, station_holder.get_stations())
 
-        st.metric(label="Total Generations", value=st.session_state["stats"]["generation_count"])
+                # Add Current Score, Compute Time, and Total Generations to the results
+                generation_number = st.session_state["generation"] - 1  # Current generation
+                current_score = st.session_state["stats"]["best_cost"][-1]
+                compute_time = round((time.time() - starttime), 3)
+                total_generations = st.session_state["stats"]["generation_count"]
 
-        try:
-            st.metric(label="Compute Time", value=f"{round((time.time()-starttime), 3)}s") # label compute time if compute time exists
-        except:
-            pass
+                # Create a row of the current generation's statistics
+                current_row = {
+                    "Gen": generation_number,
+                    "Score": current_score,
+                    "Time": compute_time,
+                    "AvgStops": secondary_evaluation_results["AvgTravelStops"],
+                    "AvgCongestion": secondary_evaluation_results["AvgCongestion"],
+                    "LineUseVariance": secondary_evaluation_results["LineUseVariance"],
+                    "LineCount": secondary_evaluation_results["LineCount"],
+                    "OverlappingLines": secondary_evaluation_results["NumOverlappingLines"],
+                    "AvgLineDistance": secondary_evaluation_results["AvgLineDist"],
+                    "AvgTripDistance": secondary_evaluation_results["AvgTripDist"]
+                }
+
+                # Append the row to the session state's DataFrame
+                st.session_state["results_df"] = pd.concat([
+                    st.session_state["results_df"],
+                    pd.DataFrame([current_row])
+                ], ignore_index=True)
+
+                # Display the table with all generations' data
+                st.dataframe(
+                    st.session_state["results_df"],
+                    use_container_width=True,  # Make the table span the full width
+                    hide_index=True
+    
+                )
+            except:
+                pass
+
 
         # Reset Button
         if st.button("Reset"):
@@ -149,8 +218,7 @@ else:
 
 # Display the graph on the left side
 with col1:
-    st.subheader("Map Display")  # Add a header for clarity
-    st.text("Red: Residential\nBlue: Commercial\nGreen: Industrial")
+    st.text("Red: Residential -- Blue: Commercial -- Green: Industrial")
     if st.session_state["graph"]:
         buf = plot_graph(st.session_state["graph"], station_holder.get_stations())
         st.image(buf, caption=f"Graph for Generation {st.session_state['generation']}", use_container_width=True)

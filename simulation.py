@@ -49,9 +49,9 @@ def initialize_graph(stations):
             break
     return graph
 
-def evaluate_graph(graph):
+def evaluate_graph(graph, weights):
     stations = station_holder.get_stations()
-    return batch.evaluate_state(graph, stations)
+    return batch.evaluate_state(graph, stations, weights)
 
 class GeneticAlgorithm:
     def __init__(self, graph):
@@ -116,10 +116,10 @@ class GeneticAlgorithm:
         best_idx = min(range(len(self.fitness)), key=self.fitness.__getitem__)
         return self.offspring[best_idx], self.fitness[best_idx]
 
-    def evolve(self, mutation_rate=0.8):
+    def evolve(self, mutation_rate, children_count, weights):
         """Evolves the population to produce the next generation."""
         next_generation = []
-        for _ in range(len(self.offspring)):
+        for _ in range(children_count):
             parent1, parent2 = random.sample(self.offspring, 2)
             child = self.generate_offspring(parent1, parent2, mutation_rate)
             next_generation.append(child)
