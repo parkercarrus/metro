@@ -95,6 +95,8 @@ if st.session_state["generation"] == 0:
         random_state = st.number_input("Optional Random State", value=None)
         if random_state is None:
             random_state = random.randint(1,1000)
+        else:
+            random_state = int(random_state)
 
         # Sliders for Map Settings
         map_size = 800
