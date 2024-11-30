@@ -53,9 +53,9 @@ def main():
         )
 
         legend_elements = [
-            mlines.Line2D([], [], color='blue', marker='o', linestyle='None', markersize=10, label='Residential Station'),
+            mlines.Line2D([], [], color='red', marker='o', linestyle='None', markersize=10, label='Residential Station'),
             mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=10, label='Industrial Station'),
-            mlines.Line2D([], [], color='red', marker='o', linestyle='None', markersize=10, label='Commercial Station'),
+            mlines.Line2D([], [], color='blue', marker='o', linestyle='None', markersize=10, label='Commercial Station'),
             mpatches.Patch(color='green', label='Not Congested'),
             mpatches.Patch(color='red', label='Congested'),
         ]
