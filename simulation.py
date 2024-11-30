@@ -1,10 +1,8 @@
 import networkx as nx
 import numpy as np
 import random
-from faker import Faker
 import batch
 
-fake = Faker()
 P_CAPACITY = {"Res": (100, 10), "Com": (200, 20), "Ind": (150, 15)}
 
 class Station:
@@ -12,7 +10,6 @@ class Station:
         self.station_id = id
         self.position = position
         self.type = type
-        self.name = fake.city()
         self.capacity = int(np.random.normal(p_capacity[self.type][0], p_capacity[self.type][1]))
 
 class StationHolder:
@@ -28,12 +25,14 @@ class StationHolder:
 station_holder = StationHolder()
 
 
-def generate_stations(zones_count, map_size=800, cluster_spread=50):
+def generate_stations(zones_count, random_state, map_size=800, cluster_spread=50):
+    rng = np.random.default_rng(random_state) 
+
     stations = []
     for station_type, num_clusters in zones_count.items():
         for _ in range(num_clusters):
-            center = np.random.rand(2) * map_size  # Generate a random cluster center
-            location = center + np.random.randn(2) * cluster_spread  # Add spread
+            center = rng.random(2) * map_size  # Generate a random cluster center
+            location = center + rng.normal(0, cluster_spread, 2)  # Add spread
             station = Station(len(stations), location, station_type)
             stations.append(station)
     return stations
@@ -93,17 +92,20 @@ class GeneticAlgorithm:
 
 
     def mutate_offspring(self, offspring, mutation_rate):
-        """Mutates the offspring by adding or removing edges."""
+        """
+        Mutates the offspring by adding or removing edges.
+        """
         if random.random() < mutation_rate:
             if offspring.number_of_edges() < self.max_edges:
                 # Add a new edge if under limit
-                u, v = random.sample(offspring.nodes(), 2)
+                u, v = random.sample(list(offspring.nodes()), 2)  # Convert to list
                 if not offspring.has_edge(u, v):
                     offspring.add_edge(u, v, weight=0)
             elif offspring.number_of_edges() > self.max_edges:
                 # Remove a random edge if over limit
                 u, v = random.choice(list(offspring.edges))
                 offspring.remove_edge(u, v)
+
 
     def evaluate_population(self, fitness_function=evaluate_graph):
         """Evaluates the fitness of each offspring in the population."""

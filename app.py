@@ -3,6 +3,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from io import BytesIO
 from simulation import generate_stations, initialize_graph, GeneticAlgorithm, station_holder, evaluate_graph
+import random
+import time
 
 # Helper function to plot the graph and return the image buffer
 def plot_graph(graph, stations):
@@ -53,7 +55,7 @@ col1, col2 = st.columns([3, 2])  # 3:2 ratio for left (graph) and right (control
 
 # Title Section
 with col1:
-    st.title("Graph Evolution")
+    st.title("Metro Optimization")
 
 if st.session_state["generation"] == 0:
     with col2:
@@ -62,6 +64,9 @@ if st.session_state["generation"] == 0:
         residential_count = st.slider("Residential Stations", 1, 50, 10)
         industrial_count = st.slider("Industrial Stations", 1, 50, 10)
         commercial_count = st.slider("Commercial Stations", 1, 50, 10)
+        random_state = st.number_input("Optional Random State", value=None)
+        if random_state is None:
+            random_state = random.randint(1,1000)
 
         # Sliders for Map Settings
         map_size = 800
@@ -70,7 +75,7 @@ if st.session_state["generation"] == 0:
         # Button to initialize the graph
         if st.button("Initialize Graph"):
             zones_count = {"Res": residential_count, "Ind": industrial_count, "Com": commercial_count}
-            stations = generate_stations(zones_count=zones_count, map_size=map_size, cluster_spread=cluster_spread)
+            stations = generate_stations(zones_count=zones_count, random_state=random_state, map_size=map_size, cluster_spread=cluster_spread)
             graph = initialize_graph(stations)
 
             # Set stations in the singleton StationHolder
@@ -99,6 +104,7 @@ else:
         # Button to evolve
         if st.button("Evolve"):
             with st.spinner("Evolving..."):
+                starttime = time.time()
                 # Get current graph and GA
                 ga = st.session_state["ga"]
 
@@ -119,7 +125,7 @@ else:
             st.success(f"Generation {st.session_state['generation'] - 1} Complete!")
 
         # Display statistics
-        st.subheader("Statistics")
+        st.subheader("Stats")
         if st.session_state["stats"]["best_cost"]:
             st.metric(label="Best Cost", value=f"{st.session_state['stats']['best_cost'][-1]:.2f}")
         else:
@@ -127,18 +133,24 @@ else:
 
         st.metric(label="Total Generations", value=st.session_state["stats"]["generation_count"])
 
+        try:
+            st.metric(label="Compute Time", value=f"{round((time.time()-starttime), 3)}s") # label compute time if compute time exists
+        except:
+            pass
+
         # Reset Button
         if st.button("Reset"):
             st.session_state["generation"] = 0
             st.session_state["graph"] = None
             st.session_state["ga"] = None
-            st.session_state["stats"] = {"best_cost": [], "generation_count": 0}
+            st.session_state["stats"] = {"best_cost": []}
             station_holder.set_stations([])  # Clear the stations
             st.success("Application Reset!")
 
 # Display the graph on the left side
 with col1:
-    st.subheader("Graph Display")  # Add a header for clarity
+    st.subheader("Map Display")  # Add a header for clarity
+    st.text("Red: Residential\nBlue: Commercial\nGreen: Industrial")
     if st.session_state["graph"]:
         buf = plot_graph(st.session_state["graph"], station_holder.get_stations())
         st.image(buf, caption=f"Graph for Generation {st.session_state['generation']}", use_container_width=True)
