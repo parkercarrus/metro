@@ -54,9 +54,9 @@ def evaluate_graph(graph, weights):
     return batch.evaluate_state(graph, stations, weights)
 
 class GeneticAlgorithm:
-    def __init__(self, graph):
+    def __init__(self, graph, max_edges):
         self.graph = graph
-        self.max_edges = round(2 * len(self.graph.nodes))  # Maximum edge budget
+        self.max_edges = max_edges  # Maximum edge budget
         self.offspring = []
         self.fitness = None
 

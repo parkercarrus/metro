@@ -201,8 +201,7 @@ def weighted_cost(arrived_passengers, trip_counter, graph, stations, weights):
         weights['AvgTripDistance']*(100/2000) * mean_traveled_distance + 
         weights['MeanDistCost']*(100/800) * mean_distance_cost +
         weights['OverlappingLines']* overlapping_edges
-
-    )    
+    )  
     return total_cost
 
 def update_edge_weights(graph, trip_counter):
