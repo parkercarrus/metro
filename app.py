@@ -38,6 +38,7 @@ with tabs[1]:
     ## 📊 Evaluation of a Metro Map
     Each metro map (individual) is assessed by simulating passenger transport over a set **epoch**. The evaluation process includes:
     - **Passenger Grouping**: Passengers are categorized by their origin and destination stations.
+    - **Passenger Destinations** Passengers are more likely to choose closer stations
     - **Passenger Generation**: Each station generates passengers probabilistically, following a normal distribution influenced by the station's distance from the map center.
     - **Performance Metrics**: Metrics like average travel time, congestion, and line usage are calculated to determine overall map efficiency.
 

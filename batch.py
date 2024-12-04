@@ -4,17 +4,6 @@ import random
 from collections import deque
 
 
-p_passengers = {
-    ("Res", "Res"): 0.2,
-    ("Ind", "Ind"): 0.1,
-    ("Com", "Com"): 0.1,
-    ("Res", "Ind"): 0.1,
-    ("Res", "Com"): 0.1,
-    ("Com", "Res"): 0.1,
-    ("Ind", "Com"): 0.1,
-    ("Com", "Ind"): 0.1,
-    ("Ind", "Res"): 0.1
-}
 
 class TripCounter:
     def __init__(self):
@@ -83,16 +72,22 @@ class Passenger:
         print(
             f"Passenger {self.passenger_id} at station {self.current_station_id} with destination {self.destination_id} - Elapsed {self.ticks} ticks"
         )
-       
-def generate_passengers(stations, p_passengers, count):
+
+def calculate_end_station(station):
+    distances = np.array(list(station.distances.values()))
+    weights = 1 / distances
+    probabilities = weights / weights.sum()
+    target = np.random.choice(len(distances), p=probabilities)
+    return target
+
+def generate_passengers(stations, count):
     passengers = []
     for i in range(count):
-        path_type = random.choices(list(p_passengers.keys()), weights=list(p_passengers.values()))
-        start, end = path_type[0][0], path_type[0][1]
-        start_station = random.choice([station for station in stations if station.type == start])
-        end_station = random.choice([station for station in stations if station.type == end])
+        start_station = random.choice([station for station in stations])
 
-        newPassenger = Passenger(start_station.station_id, end_station.station_id)
+        end_station_idx = calculate_end_station(start_station)
+
+        newPassenger = Passenger(start_station.station_id, end_station_idx)
 
         passengers.append(newPassenger)
 
@@ -208,7 +203,7 @@ def update_edge_weights(graph, trip_counter):
 def batch(graph, stations, generation_quantity, iterations):
     regens = 0
     arrived_passengers = []
-    passengers = deque(generate_passengers(stations, p_passengers, generation_quantity))
+    passengers = deque(generate_passengers(stations, generation_quantity))
     trip_counter = TripCounter()
     while regens < iterations:
         
@@ -223,7 +218,7 @@ def batch(graph, stations, generation_quantity, iterations):
         if regens % 5 == 0:
             update_edge_weights(graph, trip_counter)
         if regens < iterations:
-            passengers.extend(generate_passengers(stations, p_passengers, generation_quantity))
+            passengers.extend(generate_passengers(stations, generation_quantity))
         regens += 1
     return arrived_passengers, trip_counter, graph
 
