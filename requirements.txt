@@ -2,3 +2,4 @@ numpy>=1.22.0
 networkx>=3.0
 matplotlib>=3.7.0
 streamlit>=1.25.0
+scipy>=1.14.1
