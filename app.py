@@ -2,12 +2,12 @@ import streamlit as st
 import module
 
 st.set_page_config(layout="wide", page_title="Metro Optimization Evolution")
-tabs = st.tabs(["About", "Use"])
-
-with tabs[1]:
-    module.main()
+tabs = st.tabs(["Use", "About"])
 
 with tabs[0]:
+    module.main()
+
+with tabs[1]:
     st.title("About this App")
     st.markdown("""
     ## 🚇 An Algorithmic Approach to Metro Planning
