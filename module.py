@@ -84,7 +84,7 @@ def main():
     col1, col2 = st.columns([3, 2])  
 
     with col1:
-        if not st.session_state["graph_initialized"]:
+        if not st.session_state.get("graph_initialized", False):
             st.title("Welcome to the App!")
             st.write("Please initialize the graph to get started:")
             st.markdown("""
