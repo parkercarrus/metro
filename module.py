@@ -42,7 +42,7 @@ def main():
             edge_colors = "gray" 
 
         nx.draw(
-            graph, pos, with_labels=False, node_size=50, alpha=0.7, node_color='black', edge_color=edge_colors
+            graph, pos, with_labels=False, node_size=50, alpha=0.7, node_color='white', edge_color=edge_colors
         )
 
         legend_elements = [
@@ -54,7 +54,7 @@ def main():
 
         # save plot for streamlit use
         buf = BytesIO()
-        plt.savefig(buf, format="png", facecolor='#d1d1d1')
+        plt.savefig(buf, format="png", facecolor='#000000')
         plt.close()
         buf.seek(0)
         return buf
