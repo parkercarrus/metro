@@ -17,7 +17,6 @@ This project combines concepts from applied mathematics, optimal control, and gr
 
 ## Roadmap
 
-- [ ] Enhance GNN training pipeline
-- [ ] Add support for real-time passenger data
+- [ ] Enhance GNN pipeline
+- [ ] Add support for real-world metro areas
 - [ ] Expand visualizations with heatmaps and flow animations
-- [ ] Deploy web app on a scalable cloud platform
